@@ -1,49 +1,84 @@
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
-from os import getcwd
+import speech_recognition as sr   #pip install SpeechRecognition
+import os                         # no need to install
+import threading                  # no need to install
+from mtranslate import translate  #pip install mtranslate
+from colorama import Fore,Style,init #pip install colorama
 
-# Setting up Chrome options with specific arguments
-chrome_options = webdriver.ChromeOptions()
-chrome_options.add_argument("--use-fake-ui-for-media-stream")
-chrome_options.add_argument("--headless=new")
+init(autoreset=True) #Automatically reset Style After Each print
 
-# Setting up the Chrome driver with WebDriverManager and options
-driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+def print_loop():
+    while True:
+        print(Fore.LIGHTGREEN_EX + "Listning...",end="",flush=True)
+        print(Style.RESET_ALL,end="",flush=True)
+        print("",end="",flush=True)
 
-# Creating the URL for the website using the current working directory
-website = "https://allorizenproject1.netlify.app/"
-
-# Opening the website in the Chrome browser
-driver.get(website)
-
-Recog_File = f"{getcwd()}\\input.txt"
+def Trans_hindi_to_english(txt):
+    english_txt = translate(txt,"en-us")
+    return english_txt
 
 def listen():
-    print("POWER BY ꧁࿇☬༒Anuj Yadav༒☬࿇꧂ || ༺TeⱥmToX𝓲C༻ || ")
-    try:
-        start_button = WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.ID, 'startButton')))
-        start_button.click()
-        print("Listening...")
-        output_text = ""
-        is_second_click = False
+    recognizer = sr.Recognizer()
+    recognizer.dynamic_energy_threshold = False
+    recognizer.energy_threshold = 300
+    recognizer.dynamic_energy_adjustment_damping = 0.05  # less more active
+    recognizer.dynamic_energy_ratio = 1.0
+    recognizer.pause_threshold = 0.3
+    recognizer.operation_timeout = None
+    recognizer.pause_threshold = 0.2
+    recognizer.non_speaking_duration = 0.1
+
+    with sr.Microphone() as source:
+        recognizer.adjust_for_ambient_noise(source)
         while True:
-            output_element = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, 'output')))
-            current_text = output_element.text.strip()
-            if "Start Listening" in start_button.text and is_second_click:
-                if output_text:
-                    is_second_click = False
-            elif "Listening..." in start_button.text:
-                is_second_click = True
-            if current_text != output_text:
-                output_text = current_text
-                with open(Recog_File, "w") as file:
-                    file.write(output_text.lower())
-                    print("Anuj Yadav:", output_text)
-    except KeyboardInterrupt:
-        pass
-    except Exception as e:
-        print("An error occurred:", e)
+            print(Fore.LIGHTGREEN_EX + "Listning...", end="", flush=True)
+            try:
+                audio = recognizer.listen(source,timeout=None)
+                print("\r"+Fore.LIGHTYELLOW_EX + "Recognizing..",end="",flush=True)
+                recognized_txt = recognizer.recognize_google(audio).lower()
+                if recognized_txt:
+                    translated_txt = Trans_hindi_to_english(recognized_txt)
+                    print("\r"+Fore.BLUE + "Mr Zeno : " + translated_txt)
+                    return translated_txt
+                else:
+                    return ""
+            except sr.UnknownValueError:
+                recognized_txt = ""
+            finally:
+                print("\r",end="",flush=True)
+
+        os.system("cls" if os.name == "nt" else "clear")
+        # threading part
+        listen_thread = threading.Thread(target=listen)
+        print_thread = threading.Thread(target=print_loop)
+        listen_thread.start()
+        print_thread.start()
+        listen_thread.join()
+        print_thread.join()
+
+
+def hearing():
+    recognizer = sr.Recognizer()
+    recognizer.dynamic_energy_threshold = False
+    recognizer.energy_threshold = 300
+    recognizer.dynamic_energy_adjustment_damping = 0.05  # less more active
+    recognizer.dynamic_energy_ratio = 1.9
+    recognizer.pause_threshold = 0.3
+    recognizer.operation_timeout = None
+    recognizer.pause_threshold = 0.2
+    recognizer.non_speaking_duration = 0.1
+
+    with sr.Microphone() as source:
+        recognizer.adjust_for_ambient_noise(source)
+        while True:
+            try:
+                audio = recognizer.listen(source,timeout=None)
+                recognized_txt = recognizer.recognize_google(audio).lower()
+                if recognized_txt:
+                    translated_txt = Trans_hindi_to_english(recognized_txt)
+                    return translated_txt
+                else:
+                    return ""
+            except sr.UnknownValueError:
+                recognized_txt = ""
+            finally:
+                print("\r",end="",flush=True)
